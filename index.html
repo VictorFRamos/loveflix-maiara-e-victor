@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Imagem Seguro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #imageContainer {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #imageContainer img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Visualizador de Imagem Seguro</h2>
+        <input type="text" id="codeInput" placeholder="Digite o código de acesso">
+        <button onclick="decryptAndShowImage()">Visualizar Imagem</button>
+        <div id="imageContainer"></div>
+        <div id="errorMessage" class="error"></div>
+    </div>
+
+    <script>
+        let encryptedImageData = '';
+
+// Função para ler o arquivo txt
+async function loadEncryptedData() {
+    try {
+        const response = await fetch('imagem.txt');
+        if (!response.ok) {
+            throw new Error('Erro ao carregar o arquivo');
+        }
+        encryptedImageData = await response.text();
+        document.getElementById('message').textContent = 'Arquivo carregado com sucesso!';
+        document.getElementById('message').className = 'success';
+    } catch (error) {
+        document.getElementById('message').textContent = 'Erro ao carregar o arquivo: ' + error.message;
+        document.getElementById('message').className = 'error';
+    }
+}
+
+// Carrega o arquivo assim que a página é aberta
+window.onload = loadEncryptedData;
+
+// Permite usar a tecla Enter para submeter o código
+document.getElementById('codeInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        decryptAndShowImage();
+    }
+});
+
+function decryptAndShowImage() {
+    const code = document.getElementById('codeInput').value;
+    const messageElement = document.getElementById('message');
+    const imageContainer = document.getElementById('imageContainer');
+
+    if (!encryptedImageData) {
+        messageElement.textContent = 'Arquivo de imagem não encontrado';
+        messageElement.className = 'error';
+        return;
+    }
+
+    if (code.trim() === '') {
+        messageElement.textContent = 'Por favor, digite um código';
+        messageElement.className = 'error';
+        return;
+    }
+
+    try {
+        // Tenta descriptografar a imagem usando o código fornecido
+        const decryptedData = CryptoJS.AES.decrypt(encryptedImageData, code).toString(CryptoJS.enc.Utf8);
+        
+        if (decryptedData) {
+            // Verifica se o resultado é uma string base64 válida
+            if (decryptedData.startsWith('data:image')) {
+                // Se a descriptografia for bem-sucedida, exibe a imagem
+                imageContainer.innerHTML = `<img src="${decryptedData}" alt="Imagem descriptografada">`;
+                messageElement.className = 'success';
+                messageElement.textContent = 'Imagem descriptografada com sucesso!';
+            } else {
+                throw new Error('Código incorreto ou formato inválido');
+            }
+        } else {
+            throw new Error('Código incorreto ou formato inválido');
+        }
+    } catch (error) {
+        messageElement.className = 'error';
+        messageElement.textContent = 'Código incorreto ou arquivo inválido';
+        imageContainer.innerHTML = '';
+    }
+}
+    </script>
+</body>
+</html>
